@@ -887,7 +887,7 @@ sensor_msgs::CameraInfoPtr AstraDriver::getDepthCameraInfo(int width, int height
 {
   // The depth image has essentially the same intrinsics as the IR image, BUT the
   // principal point is offset by half the size of the hardware correlation window
-  // (probably 9x9 or 9x7 in 640x480 mode). See http://www.ros.org/wiki/kinect_calibration/technical
+  // (probably 9x9 or 9x7 in 640x480 mode). See http://wiki.ros.org/kinect_calibration/technical
 
   double scaling = (double)width / 640;
 
