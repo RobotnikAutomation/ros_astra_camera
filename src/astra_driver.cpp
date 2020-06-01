@@ -232,6 +232,7 @@ void AstraDriver::advertiseROSTopics()
   set_ir_exposure_server = nh_.advertiseService("set_ir_exposure", &AstraDriver::setIRExposureCb, this);
   set_ir_flood_server = nh_.advertiseService("set_ir_flood", &AstraDriver::setIRFloodCb, this);
   set_laser_server = nh_.advertiseService("set_laser", &AstraDriver::setLaserCb, this);
+  set_ldp_server = nh_.advertiseService("set_ldp", &AstraDriver::setLDPCb, this);
   reset_ir_gain_server = nh_.advertiseService("reset_ir_gain", &AstraDriver::resetIRGainCb, this);
   reset_ir_exposure_server = nh_.advertiseService("reset_ir_exposure", &AstraDriver::resetIRExposureCb, this);
   get_camera_info = nh_.advertiseService("get_camera_info", &AstraDriver::getCameraInfoCb, this);
@@ -280,6 +281,12 @@ bool AstraDriver::setIRExposureCb(astra_camera::SetIRExposureRequest& req, astra
 bool AstraDriver::setLaserCb(astra_camera::SetLaserRequest& req, astra_camera::SetLaserResponse& res)
 {
   device_->setLaser(req.enable);
+  return true;
+}
+
+bool AstraDriver::setLDPCb(astra_camera::SetLDPRequest& req, astra_camera::SetLDPResponse& res)
+{
+  device_->setLDP(req.enable);
   return true;
 }
 
@@ -790,7 +797,7 @@ sensor_msgs::CameraInfoPtr AstraDriver::getColorCameraInfo(int width, int height
   else
   {
     // If uncalibrated, fill in default values
-    if (astraWithUVC(device_->getDeviceTypeNo()))
+    if (device_->isCameraParamsValid())
     {
       sensor_msgs::CameraInfo cinfo = convertAstraCameraInfo(device_->getCameraParams(), time);
       info = boost::make_shared<sensor_msgs::CameraInfo>(ir_info_manager_->getCameraInfo());
@@ -812,6 +819,18 @@ sensor_msgs::CameraInfoPtr AstraDriver::getColorCameraInfo(int width, int height
       {
         info->P[i] = cinfo.P[i];
       }
+/*02112020 color camera param change according to resolution */
+  double scaling = (double)width / 640;
+  info->K[0] *= scaling; // fx
+  info->K[2] *= scaling; // cx
+  info->K[4] *= scaling; // fy
+  info->K[5] *= scaling; // cy
+  info->P[0] *= scaling; // fx
+  info->P[2] *= scaling; // cx
+  info->P[5] *= scaling; // fy
+  info->P[6] *= scaling; // cy
+/* 02112020 end*/
+	    
     }
     else
     {
@@ -845,7 +864,8 @@ sensor_msgs::CameraInfoPtr AstraDriver::getIRCameraInfo(int width, int height, r
   {
     // If uncalibrated, fill in default values
     info = getDefaultCameraInfo(width, height, device_->getDepthFocalLength(height));
-    if (astraWithUVC(device_->getDeviceTypeNo()))
+
+    if (device_->isCameraParamsValid())
     {
       OBCameraParams p = device_->getCameraParams();
       info->D.resize(5, 0.0);
@@ -873,6 +893,18 @@ sensor_msgs::CameraInfoPtr AstraDriver::getIRCameraInfo(int width, int height, r
       info->P[5] = info->K[4];
       info->P[6] = info->K[5];
       info->P[10] = 1.0;
+/* 02122020 Scale IR Params */
+  double scaling = (double)width / 640;
+  info->K[0] *= scaling; // fx
+  info->K[2] *= scaling; // cx
+  info->K[4] *= scaling; // fy
+  info->K[5] *= scaling; // cy
+  info->P[0] *= scaling; // fx
+  info->P[2] *= scaling; // cx
+  info->P[5] *= scaling; // fy
+  info->P[6] *= scaling; // cy
+/* 02122020 end */	    
+	 
     }
   }
 
@@ -890,12 +922,11 @@ sensor_msgs::CameraInfoPtr AstraDriver::getDepthCameraInfo(int width, int height
   // (probably 9x9 or 9x7 in 640x480 mode). See http://wiki.ros.org/kinect_calibration/technical
 
   double scaling = (double)width / 640;
-
   sensor_msgs::CameraInfoPtr info = getIRCameraInfo(width, height, time);
-  info->K[2] -= depth_ir_offset_x_*scaling; // cx
-  info->K[5] -= depth_ir_offset_y_*scaling; // cy
-  info->P[2] -= depth_ir_offset_x_*scaling; // cx
-  info->P[6] -= depth_ir_offset_y_*scaling; // cy
+  info->K[2] -= depth_ir_offset_x_ * scaling;
+  info->K[5] -= depth_ir_offset_y_ * scaling;
+  info->P[2] -= depth_ir_offset_x_ * scaling;
+  info->P[6] -= depth_ir_offset_y_ * scaling;
 
   /// @todo Could put this in projector frame so as to encode the baseline in P[3]
   return info;

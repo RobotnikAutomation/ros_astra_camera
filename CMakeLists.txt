@@ -53,6 +53,7 @@ add_service_files(
   SetIRGain.srv
   SetIRFlood.srv
   SetLaser.srv
+  SetLDP.srv
   SetUVCExposure.srv
   ResetIRGain.srv
   ResetIRExposure.srv
@@ -154,11 +155,11 @@ install(TARGETS astra_wrapper astra_camera_nodelet astra_camera_node astra_list_
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
-install(FILES include/openni2_redist/x64/libOpenNI2.so
+install(FILES include/openni2_redist/${HOST_PLATFORM}/libOpenNI2.so
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/
 )
 
-install(DIRECTORY include/openni2_redist/x64/OpenNI2
+install(DIRECTORY include/openni2_redist/${HOST_PLATFORM}/OpenNI2
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/
 )
 

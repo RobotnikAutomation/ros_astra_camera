@@ -47,6 +47,7 @@
 #include <boost/make_shared.hpp>
 
 #include <string>
+#include <cmath>
 
 namespace astra_wrapper
 {
@@ -82,6 +83,12 @@ AstraDevice::AstraDevice(const std::string& device_URI):
 
   int param_size = sizeof(OBCameraParams);
   openni_device_->getProperty(openni::OBEXTENSION_ID_CAM_PARAMS, (uint8_t*)&m_CamParams, &param_size);
+  m_ParamsValid = true;
+  if (std::isnan(m_CamParams.l_intr_p[0]) || std::isnan(m_CamParams.l_intr_p[1]) ||
+      std::isnan(m_CamParams.l_intr_p[2]) || std::isnan(m_CamParams.l_intr_p[3]))
+  {
+    m_ParamsValid = false;
+  }
 
   int serial_number_size = sizeof(serial_number);
   memset(serial_number, 0, serial_number_size);
@@ -172,6 +179,11 @@ OBCameraParams AstraDevice::getCameraParams() const
   return m_CamParams;
 }
 
+bool AstraDevice::isCameraParamsValid()
+{
+  return m_ParamsValid;
+}
+
 char* AstraDevice::getSerialNumber()
 {
   return serial_number;
@@ -241,6 +253,30 @@ void AstraDevice::setIRFlood(bool enable)
     enable_ = 0;
   }
   openni_device_->setProperty(XN_MODULE_PROPERTY_IRFLOOD_STATE, enable_);
+}
+
+void AstraDevice::setLDP(bool enable)
+{
+  int data_size = 4;
+  int enable_ = 1;
+  if (enable == false)
+  {
+    enable_ = 0;
+  }
+  if (device_type_no == OB_STEREO_S_U3_NO)
+  {
+    openni_device_->setProperty(XN_MODULE_PROPERTY_LDP_ENABLE, (uint8_t *)&enable_, 4);
+  }
+  else
+  {
+    boost::shared_ptr<openni::VideoStream> depth_stream = getDepthVideoStream();
+    boost::shared_ptr<openni::VideoStream> ir_stream = getIRVideoStream();
+    depth_stream->stop();
+    ir_stream->stop();
+    openni_device_->setProperty(openni::OBEXTENSION_ID_LDP_EN, (uint8_t *)&enable_, 4);
+    depth_stream->start();
+    ir_stream->start();
+  }
 }
 
 void AstraDevice::switchIRCamera(int cam)
