@@ -4,7 +4,7 @@
   <arg name="camera"      default="camera"/>
   <arg name="publish_tf"  default="true"/>
   <arg name="3d_sensor_1"   default="stereo_s_u3"/>  <!-- stereo_s_u3, astrapro, astra -->
-  <arg_name="3d_sensor_2"   default="astra"/>
+  <arg name="3d_sensor_2"   default="astra"/>
 
   <arg name="device_1_prefix"   default="01"/>
   <arg name="device_2_prefix"   default="02"/>
